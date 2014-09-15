@@ -1,3 +1,6 @@
+'''Goes through a bunch of possible classification pipelines and
+scores each with cross-validation and records scores.
+'''
 import numpy as np
 import csv
 from itertools import izip
@@ -162,9 +165,9 @@ CLASSIFIERS = [
 if __name__ == "__main__":
     ids, data, labels = load_data()
     #gs = tune(data,labels)
-    # evaluate(data,labels)
-    #clf = CLASSIFIERS[-1]
-    write_predictions(clf.fit(data,labels))
+    evaluate(data,labels)
+    # clf = CLASSIFIERS[-1]
+    # write_predictions(clf.fit(data,labels))
 
 def inspect_num_features():
     the_mean = []
