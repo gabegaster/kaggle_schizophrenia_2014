@@ -1,11 +1,8 @@
-'''Uses helper utilities to load data and write predictions from
-make_benchmarks. 
-
-Trains SupportVectorMachine and uses it to write predictions.
+'''Trains SupportVectorMachine and uses it to write predictions.
 '''
-
-from make_benchmarks import load_data, write_predictions
 from sklearn import svm
+
+from utils import load_data, write_predictions
 
 if __name__ == "__main__":
     ids, data, labels = load_data()
