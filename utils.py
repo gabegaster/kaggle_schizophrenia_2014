@@ -54,6 +54,12 @@ def write_predictions(clf):
             w.writerow(item)
 
 def get_score(clf, data):
+    '''Allows several of different kinds of classifiers,
+    interchangably. Some (like random forests, SVMs, and logistic
+    regression) have the method decision_function and some (like naive
+    bayes) have predict_proba.
+
+    '''
     try:
         out = clf.decision_function(data).ravel()
     except AttributeError:

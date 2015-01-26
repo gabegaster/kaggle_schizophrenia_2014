@@ -1,9 +1,7 @@
 '''Goes through a bunch of possible classification pipelines and
-scores each with cross-validation and records scores.
+scores each with cross-validation and print scores.
 '''
 import numpy as np
-import csv
-from itertools import izip
 
 # classifiers / transformers / pipelines
 from sklearn import naive_bayes
@@ -28,42 +26,7 @@ from sklearn.grid_search import GridSearchCV,RandomizedSearchCV
 from matplotlib import pyplot as plt
 import pandas
 
-def load_data(train=True, sbm_only=False, fnc_only=False):
-    if train:
-        fnc="Train/train_FNC.csv"
-        sbm="Train/train_SBM.csv"
-    else:
-        fnc="Test/test_FNC.csv"
-        sbm="Test/test_SBM.csv"
-        
-    with open(fnc,'r') as f:
-        train_fnc = list(csv.reader(f))
-    fnc_header = train_fnc[0]
-    fnc_data = np.array([np.array(map(float,i)) for i in train_fnc[1:]])
-    ids = np.array(fnc_data[:,0],dtype=int)
-
-
-    with open(sbm,'r') as f:
-        train_sbm = list(csv.reader(f))
-    sbm_header = train_sbm[0]
-    sbm_data = np.array([np.array(map(float,i)) for i in train_sbm[1:]])
-    fnc_data = fnc_data[:,1:]
-    sbm_data = sbm_data[:,1:]
-    data = np.column_stack((sbm_data,fnc_data))
-    
-    if not train:
-        return ids, data
-
-    with open("train/train_labels.csv",'r') as f:
-        f.next()
-        labels = np.array([int(i[1]) for i in csv.reader(f)])
-
-    if sbm_only:
-        return ids,sbm_data,labels
-    elif fnc_only:
-        return ids,fnc_data,labels
-    else:
-        return ids, data, labels
+from utils import write_predictions, load_data, get_score
 
 def bootstrap(data, labels, clf=naive_bayes.BernoulliNB):
     sample = np.random.sample(len(data)) < .75
@@ -73,27 +36,6 @@ def bootstrap(data, labels, clf=naive_bayes.BernoulliNB):
 def roc_score(clf, data, labels):
     predictions = get_score(clf, data)
     return metrics.roc_auc_score(labels, predictions)
-
-def get_score(clf, data):
-    try:
-        out = clf.decision_function(data).ravel()
-    except AttributeError:
-        try:
-            out = clf.predict_proba(data)[:,1]
-        except AttributeError:
-            out = clf.predict(data)
-    return out
-    
-def write_predictions(clf):
-    ids, data = load_data(False)
-    # preds = clf.predict_proba(data)[:,1]
-    preds = get_score(clf, data)
-
-    with open("submissions/" + get_name(clf)+".csv",'w') as f:
-        w = csv.writer(f)
-        w.writerow(["ID","Probability"])
-        for item in izip(ids, preds):
-            w.writerow(item)
 
 def get_name(thing):
     if hasattr(thing, "steps"):
@@ -164,28 +106,7 @@ CLASSIFIERS = [
 
 if __name__ == "__main__":
     ids, data, labels = load_data()
-    #gs = tune(data,labels)
     evaluate(data,labels)
-    # clf = CLASSIFIERS[-1]
-    # write_predictions(clf.fit(data,labels))
-
-def inspect_num_features():
-    the_mean = []
-    the_vars = []
-    X = range(30,400,10)
-    for k_best in X:
-        p = Pipeline([('f_test_%s_best'%k_best, SelectKBest(f_classif,k=k_best)),
-                      ('naive_bayes', naive_bayes.BernoulliNB())])
-        scores = np.array([bootstrap(data,labels,clf=p) for i in xrange(300)])
-        the_mean.append(scores.mean())
-        the_vars.append(scores.var())
-
-    the_vars = np.array(the_vars)
-    the_mean = np.array(the_mean)
-
-    plt.plot(X, the_mean, color='r')
-    plt.plot(X, the_mean + 2*the_vars, X, the_mean - 2*the_vars, color='b')
-    plt.show()
 
 OTHER_CLASSIFEIRS_TO_TRY = [
     naive_bayes.GaussianNB(),
@@ -245,9 +166,9 @@ OTHER_CLASSIFEIRS_TO_TRY = [
                   cv=5,
                   scoring="roc_auc",
                   n_jobs=-1))]),
-    Pipeline([('rbm', BernoulliRBM(verbose=True)),
+    Pipeline([('rbm', BernoulliRBM()),
               ("logistic",LogisticRegression())]),
-    Pipeline([('rbm', BernoulliRBM(verbose=True)),
+    Pipeline([('rbm', BernoulliRBM()),
               ("bernoulli",naive_bayes.BernoulliNB())]),
     Pipeline([("normalize", StandardScaler()),
               #("ftest_100_best",SelectKBest(f_classif,k=100)),
